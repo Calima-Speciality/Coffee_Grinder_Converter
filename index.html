@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Grind Clicks Converter</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React 18 + ReactDOM UMD -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel for in-browser JSX transform -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <meta name="description" content="Convert coffee grinder clicks between different models using microns-per-click calibration."/>
+  </head>
+  <body class="bg-zinc-50 text-zinc-900">
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useEffect, useMemo, useState } = React;
+
+      // ---- Types removed (JS only). See comments for reference ----
+      // Grinder: { id, name, stepMicron, zeroClick, notes? }
+
+      // ---- Defaults (approximate; calibrate your own) ----
+      const DEFAULT_GRINDERS = [
+        { id: "c40-standard", name: "Comandante C40 (Standard)", stepMicron: 30, zeroClick: 0, notes: "Approx. 30 µm per click. Calibrate on your unit." },
+        { id: "c40-redclix", name: "Comandante C40 (Red Clix)", stepMicron: 15, zeroClick: 0, notes: "Approx. 15 µm per click." },
+        { id: "1zpresso-jxpro", name: "1Zpresso JX-Pro", stepMicron: 12.5, zeroClick: 0, notes: "~12–13 µm per click per detent; verify with your calibration." },
+        { id: "timemore-c2", name: "Timemore Chestnut C2", stepMicron: 36, zeroClick: 0, notes: "Approx. 36 µm per click." },
+        { id: "1zpresso-kplus", name: "1Zpresso K-Plus", stepMicron: 22, zeroClick: 0, notes: "Approx. 22 µm per click." },
+        { id: "niche-zero", name: "Niche Zero (dial number)", stepMicron: 50, zeroClick: 0, notes: "Treat 1 dial unit ≈ 50 µm as a working placeholder; set your own." },
+      ];
+
+      const STORAGE_KEY = "grinder-clicks-converter:v1";
+
+      function loadGrinders() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return DEFAULT_GRINDERS;
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length) return parsed;
+          return DEFAULT_GRINDERS;
+        } catch {
+          return DEFAULT_GRINDERS;
+        }
+      }
+
+      function saveGrinders(gs) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(gs));
+      }
+
+      function uid() {
+        return Math.random().toString(36).slice(2, 9);
+      }
+
+      function classNames(...xs) {
+        return xs.filter(Boolean).join(" ");
+      }
+
+      function App() {
+        const [grinders, setGrinders] = useState(loadGrinders);
+        const [fromId, setFromId] = useState(grinders[0]?.id || "");
+        const [toId, setToId] = useState(grinders[1]?.id || "");
+        const [fromClicks, setFromClicks] = useState("18");
+        const [rounding, setRounding] = useState("0.5"); // "none" | "0.5" | "1"
+
+        useEffect(() => {
+          saveGrinders(grinders);
+        }, [grinders]);
+
+        useEffect(() => {
+          if (!grinders.find(g => g.id === fromId) && grinders[0]) setFromId(grinders[0].id);
+          if (!grinders.find(g => g.id === toId) && grinders[1]) setToId(grinders[1].id);
+        }, [grinders]);
+
+        const from = useMemo(() => grinders.find(g => g.id === fromId), [grinders, fromId]);
+        const to = useMemo(() => grinders.find(g => g.id === toId), [grinders, toId]);
+
+        const microns = useMemo(() => {
+          const clicks = parseFloat(fromClicks);
+          if (!from || Number.isNaN(clicks)) return null;
+          return (clicks - from.zeroClick) * from.stepMicron;
+        }, [from, fromClicks]);
+
+        const toClicks = useMemo(() => {
+          if (!to || microns == null) return null;
+          const raw = microns / to.stepMicron + to.zeroClick;
+          if (rounding === "none") return raw;
+          if (rounding === "1") return Math.round(raw);
+          return Math.round(raw * 2) / 2; // 0.5-step rounding
+        }, [to, microns, rounding]);
+
+        function addGrinder() {
+          const g = { id: \`custom-\${uid()}\`, name: "Custom grinder", stepMicron: 25, zeroClick: 0, notes: "Edit me" };
+          setGrinders(prev => [...prev, g]);
+          setToId(g.id);
+        }
+
+        function deleteGrinder(id) {
+          setGrinders(prev => prev.filter(g => g.id !== id));
+        }
+
+        function updateGrinder(id, patch) {
+          setGrinders(prev => prev.map(g => (g.id === id ? { ...g, ...patch } : g)));
+        }
+
+        return (
+          <div className="min-h-screen">
+            <div className="mx-auto max-w-5xl px-4 py-8">
+              <header className="mb-6 flex items-center justify-between">
+                <h1 className="text-2xl font-semibold">Grind Clicks Converter</h1>
+                <a className="text-sm underline underline-offset-4 opacity-70 hover:opacity-100" href="#calibration">
+                  Manage grinders
+                </a>
+              </header>
+
+              <main className="grid gap-6 lg:grid-cols-3">
+                {/* Converter Card */}
+                <section className="lg:col-span-2 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-200">
+                  <h2 className="mb-4 text-lg font-medium">Converter</h2>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-sm">From grinder</label>
+                      <select className="w-full rounded-xl border border-zinc-300 bg-white p-2" value={fromId} onChange={e => setFromId(e.target.value)}>
+                        {grinders.map(g => (
+                          <option key={g.id} value={g.id}>{g.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-sm">To grinder</label>
+                      <select className="w-full rounded-xl border border-zinc-300 bg-white p-2" value={toId} onChange={e => setToId(e.target.value)}>
+                        {grinders.map(g => (
+                          <option key={g.id} value={g.id}>{g.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-sm">Clicks on source</label>
+                      <input inputMode="decimal" pattern="[0-9]*" className="w-full rounded-xl border border-zinc-300 bg-white p-2" value={fromClicks} onChange={e => setFromClicks(e.target.value)} />
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-sm">Rounding</label>
+                      <select className="w-full rounded-xl border border-zinc-300 bg-white p-2" value={rounding} onChange={e => setRounding(e.target.value)}>
+                        <option value="none">No rounding</option>
+                        <option value="0.5">Nearest 0.5 click</option>
+                        <option value="1">Nearest click</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 grid gap-3">
+                    <div className="rounded-xl bg-zinc-50 p-4 ring-1 ring-inset ring-zinc-200">
+                      <p className="text-sm text-zinc-600">Estimated particle delta</p>
+                      <p className="text-2xl font-semibold">{microns == null || Number.isNaN(microns) ? "—" : \`\${microns.toFixed(1)} µm\`}</p>
+                    </div>
+
+                    <div className="rounded-xl bg-emerald-50 p-4 ring-1 ring-inset ring-emerald-200">
+                      <p className="text-sm text-emerald-700">Target grinder setting</p>
+                      <p className="text-3xl font-bold text-emerald-900">
+                        {toClicks == null || Number.isNaN(toClicks) ? "—" : \`\${toClicks.toFixed(rounding === "none" ? 2 : rounding === "0.5" ? 1 : 0)} clicks\`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="mt-4 text-xs text-zinc-500">
+                    Heads-up: factory tolerances vary. Treat this as a baseline, then dial-in by taste and flow. Calibrate your
+                    own <em>zero</em> and microns-per-click for best results.
+                  </p>
+                </section>
+
+                {/* Quick Specs Card */}
+                <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-200">
+                  <h2 className="mb-4 text-lg font-medium">Quick specs</h2>
+                  <ul className="space-y-3">
+                    {[from, to].filter(Boolean).map((g, idx) => (
+                      <li key={g.id} className="rounded-xl border border-zinc-200 p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">{idx === 0 ? "From" : "To"}: {g.name}</div>
+                          <span className="text-xs text-zinc-500">id: {g.id}</span>
+                        </div>
+                        <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                          <div className="rounded-lg bg-zinc-50 p-2">Step: <b>{g.stepMicron}</b> µm/click</div>
+                          <div className="rounded-lg bg-zinc-50 p-2">Zero: <b>{g.zeroClick}</b> clicks</div>
+                        </div>
+                        {!!g.notes && <p className="mt-2 text-xs text-zinc-500">{g.notes}</p>}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <button onClick={addGrinder} className="mt-4 w-full rounded-xl bg-zinc-900 p-2 text-white hover:bg-zinc-800">
+                    + Add custom grinder
+                  </button>
+                </section>
+              </main>
+
+              {/* Calibration / Management */}
+              <section id="calibration" className="mt-10 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-200">
+                <h2 className="mb-4 text-lg font-medium">Manage grinders & calibration</h2>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-zinc-600">
+                        <th className="p-2">Name</th>
+                        <th className="p-2">µm per click</th>
+                        <th className="p-2">Zero click</th>
+                        <th className="p-2">Notes</th>
+                        <th className="p-2"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {grinders.map(g => (
+                        <tr key={g.id} className="border-t border-zinc-200">
+                          <td className="p-2">
+                            <input className="w-full rounded-lg border border-zinc-300 p-2" value={g.name} onChange={e => updateGrinder(g.id, { name: e.target.value })} />
+                          </td>
+                          <td className="p-2">
+                            <input type="number" step="0.1" className="w-40 rounded-lg border border-zinc-300 p-2" value={g.stepMicron} onChange={e => updateGrinder(g.id, { stepMicron: parseFloat(e.target.value) || 0 })} />
+                          </td>
+                          <td className="p-2">
+                            <input type="number" step="0.5" className="w-32 rounded-lg border border-zinc-300 p-2" value={g.zeroClick} onChange={e => updateGrinder(g.id, { zeroClick: parseFloat(e.target.value) || 0 })} />
+                          </td>
+                          <td className="p-2">
+                            <input className="w-full rounded-lg border border-zinc-300 p-2" value={g.notes || ""} onChange={e => updateGrinder(g.id, { notes: e.target.value })} />
+                          </td>
+                          <td className="p-2 text-right">
+                            <button
+                              className={classNames(
+                                "rounded-lg px-3 py-2 text-xs font-medium",
+                                g.id.startsWith("custom-") ? "bg-rose-600 text-white hover:bg-rose-500" : "bg-zinc-200 text-zinc-700 cursor-not-allowed"
+                              )}
+                              disabled={!g.id.startsWith("custom-")}
+                              onClick={() => deleteGrinder(g.id)}
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <p className="mt-3 text-xs text-zinc-500">
+                  Tip: set <b>Zero click</b> to your burr-touch reference (or your personal espresso zero). Then measure a few
+                  known brews on each grinder to refine <b>µm per click</b>.
+                </p>
+              </section>
+
+              
+<footer className="mt-10 text-center text-xs text-zinc-500">
+  Built for coffee nerds. No tracking. Data stays in your browser.<br/>
+  <strong>Made by Calima Specialty Coffee</strong>
+</footer>
+
+            </div>
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
