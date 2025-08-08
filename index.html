@@ -1,234 +1,169 @@
 <!doctype html>
 <html lang="de">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Mahl-Klicks-Konverter – Calima Specialty Coffee</title>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mahl-Klicks-Konverter – Calima Specialty Coffee</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; }
+    .card { max-width: 720px; margin: auto; padding: 1rem; background: #fff; border-radius: .75rem; box-shadow: 0 0 8px rgba(0,0,0,.06); }
+    label { display:block; margin:.5rem 0 .25rem; font-size:.9rem; color:#374151 }
+    select,input { width:100%; padding:.6rem .7rem; border:1px solid #d1d5db; border-radius:.6rem; }
+    .btn { width:100%; padding:.6rem .7rem; background:#111827; color:#fff; border:none; border-radius:.6rem; }
+    .muted { color:#6b7280; font-size:.85rem; }
+  </style>
+</head>
+<body class="bg-zinc-50 text-zinc-900">
+  <!-- Header -->
+  <header class="max-w-3xl mx-auto px-4 pt-6 pb-3 flex items-center gap-3">
+    <img src="logo.jpg" alt="Calima Specialty Coffee" style="height:56px;width:56px;border-radius:9999px;object-fit:cover;">
+    <div>
+      <h1 class="text-2xl font-semibold leading-tight">Calima Specialty Coffee</h1>
+      <p class="text-sm text-gray-600">Mahl-Klicks-Konverter</p>
+    </div>
+  </header>
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Converter -->
+  <main class="max-w-3xl mx-auto px-4 pb-10 grid gap-6 md:grid-cols-2">
+    <section class="card">
+      <h2 class="text-lg font-medium mb-2">Konverter</h2>
 
-    <meta name="description" content="Convert coffee grinder clicks between different models using microns-per-click calibration. Made by Calima Specialty Coffee."/>
-    <style>
-      .flag-btn{padding:.35rem .55rem;border-radius:.75rem;border:1px solid #d4d4d8;background:#fff}
-      .flag-btn.active{background:#111827;color:#fff;border-color:#111827}
-      .brand-badge{height:56px;width:56px;border-radius:9999px;overflow:hidden;display:inline-block}
-    </style>
-  </head>
-  <body class="bg-zinc-50 text-zinc-900">
-    <div id="root"></div>
+      <label>Von Mühle</label>
+      <select id="from"></select>
 
-    <script type="text/babel" data-presets="env,react">
-      const { useEffect, useMemo, useState } = React;
+      <label>Zu Mühle</label>
+      <select id="to"></select>
 
-      const L = {
-        de:{appTitle:"Mahl-Klicks-Konverter",converter:"Konverter",fromGrinder:"Von Mühle",toGrinder:"Zu Mühle",clicksOnSource:"Klicks an Quelle",estDelta:"Geschätzte Partikel-Differenz",targetSetting:"Ziel-Einstellung",addCustom:"+ Eigene Mühle hinzufügen",notesTip:"Hinweis: Fertigungstoleranzen variieren. Als Ausgangspunkt nutzen und nach Geschmack/Flow feinjustieren. Eigene Null und µm/Klick kalibrieren.",footer:"Für Kaffee-Enthusiasten und Profis. Kein Tracking. Daten bleiben in Ihrem Browser.",by:"Erstellt von Calima Specialty Coffee",manageCal:"Mühlen & Kalibrierung verwalten",name:"Name",umPerClick:"µm pro Klick",zeroClick:"Null-Klick",notes:"Notizen",delete:"Löschen",copyJson:"Grinder-Liste kopieren",savedLocal:"Hinweis: hinzugefügte Mühlen werden lokal im Browser gespeichert."},
-        en:{appTitle:"Grind Clicks Converter",converter:"Converter",fromGrinder:"From grinder",toGrinder:"To grinder",clicksOnSource:"Clicks on source",estDelta:"Estimated particle delta",targetSetting:"Target grinder setting",addCustom:"+ Add custom grinder",notesTip:"Heads-up: factory tolerances vary. Use this as a baseline, then dial-in by taste and flow. Calibrate your own zero and µm/click.",footer:"Built for coffee enthusiasts and professionals. No tracking. Data stays in your browser.",by:"Made by Calima Specialty Coffee",manageCal:"Manage grinders & calibration",name:"Name",umPerClick:"µm per click",zeroClick:"Zero click",notes:"Notes",delete:"Delete",copyJson:"Copy grinder list",savedLocal:"Note: added grinders are saved locally in your browser."},
-        ru:{appTitle:"Конвертер кликов помола",converter:"Конвертер",fromGrinder:"Исходная кофемолка",toGrinder:"Целевая кофемолка",clicksOnSource:"Клики на исходной",estDelta:"Оценка разницы частиц",targetSetting:"Настройка для целевой",addCustom:"+ Добавить свою кофемолку",notesTip:"Важно: заводские допуски различаются. Используйте как стартовую точку и доводите по вкусу/потоку. Откалибруйте свой ноль и µm/клик.",footer:"Для любителей и профессионалов кофе. Без трекинга. Данные остаются в вашем браузере.",by:"Сделано Calima Specialty Coffee",manageCal:"Кофемолки и калибровка",name:"Название",umPerClick:"µm за клик",zeroClick:"Нулевой клик",notes:"Заметки",delete:"Удалить",copyJson:"Скопировать список кофемолок",savedLocal:"Внимание: новые кофемолки сохраняются локально в вашем браузере."}
-      };
+      <label>Klicks an Quelle</label>
+      <input id="clicks" type="number" value="18" inputmode="decimal">
 
-      const DEFAULT_GRINDERS = [
-        { id:"c40-standard", name:"Comandante C40 (Standard)", stepMicron:30, zeroClick:0, notes:"≈30 µm/click. Calibrate your unit."},
-        { id:"c40-redclix", name:"Comandante C40 (Red Clix)", stepMicron:15, zeroClick:0, notes:"≈15 µm/click."},
-        { id:"1zpresso-jxpro", name:"1Zpresso JX-Pro", stepMicron:12.5, zeroClick:0, notes:"≈12–13 µm/click per detent."},
-        { id:"timemore-c2", name:"Timemore Chestnut C2", stepMicron:36, zeroClick:0, notes:"≈36 µm/click."},
-        { id:"1zpresso-kplus", name:"1Zpresso K-Plus", stepMicron:22, zeroClick:0, notes:"≈22 µm/click."},
-        { id:"niche-zero", name:"Niche Zero (dial number)", stepMicron:50, zeroClick:0, notes:"Assume 1 dial ≈ 50 µm (placeholder)."},
-      ];
+      <div class="mt-4 grid gap-2">
+        <div class="rounded-xl bg-zinc-50 p-3 ring-1 ring-inset ring-zinc-200">
+          <div class="muted">Geschätzte Partikel-Differenz</div>
+          <div class="text-2xl font-semibold"><span id="micron">—</span> µm</div>
+        </div>
+        <div class="rounded-xl bg-emerald-50 p-3 ring-1 ring-inset ring-emerald-200">
+          <div class="text-emerald-700 text-sm">Ziel-Einstellung</div>
+          <div class="text-3xl font-bold text-emerald-900"><span id="result">—</span> Klick(s)</div>
+        </div>
+      </div>
 
-      const STORAGE_KEY = "grinder-clicks-converter:v1";
-      const LANG_KEY = "grinder-clicks-converter:lang";
-      const uid = () => Math.random().toString(36).slice(2,9);
-      const cx  = (...xs) => xs.filter(Boolean).join(" ");
-      const isAdmin = new URLSearchParams(location.search).get("admin")==="1";
+      <p class="mt-3 text-xs text-zinc-500">
+        Hinweis: Fertigungstoleranzen variieren. Als Ausgangspunkt nutzen und nach Geschmack/Flow feinjustieren.
+        Eigene Null und µm/Klick kalibrieren.
+      </p>
+    </section>
 
-      const loadGrinders = () => {
-        try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (!raw) return DEFAULT_GRINDERS;
-          const parsed = JSON.parse(raw);
-          return Array.isArray(parsed)&&parsed.length ? parsed : DEFAULT_GRINDERS;
-        } catch { return DEFAULT_GRINDERS; }
-      };
-      const saveGrinders = (gs)=>localStorage.setItem(STORAGE_KEY, JSON.stringify(gs));
+    <!-- Public note + add-custom (saved locally on user’s device) -->
+    <section class="card">
+      <h2 class="text-lg font-medium mb-2">Neue Mühle hinzufügen</h2>
+      <p class="muted mb-2">Von Nutzern hinzugefügte Mühlen werden lokal im Browser gespeichert.</p>
 
-      function App(){
-        const [lang,setLang]=useState(localStorage.getItem(LANG_KEY)||"de");
-        const t = L[lang]||L.de;
-        useEffect(()=>{document.documentElement.lang=lang;},[lang]);
+      <label>Name</label>
+      <input id="gName" placeholder="z. B. Baratza Encore">
 
-        const [grinders,setGrinders]=useState(loadGrinders);
-        const [fromId,setFromId]=useState(grinders[0]?.id||"");
-        const [toId,setToId]=useState(grinders[1]?.id||"");
-        const [fromClicks,setFromClicks]=useState("18");
+      <label>µm pro Klick</label>
+      <input id="gStep" type="number" step="0.1" placeholder="z. B. 28">
 
-        useEffect(()=>saveGrinders(grinders),[grinders]);
-        useEffect(()=>{
-          if(!grinders.find(g=>g.id===fromId)&&grinders[0]) setFromId(grinders[0].id);
-          if(!grinders.find(g=>g.id===toId)&&grinders[1]) setToId(grinders[1].id);
-        },[grinders]);
+      <label>Null-Klick</label>
+      <input id="gZero" type="number" step="0.5" placeholder="z. B. 0">
 
-        const from = useMemo(()=>grinders.find(g=>g.id===fromId),[grinders,fromId]);
-        const to   = useMemo(()=>grinders.find(g=>g.id===toId),[grinders,toId]);
+      <button class="btn mt-3" id="addBtn">+ Mühle speichern</button>
 
-        const microns = useMemo(()=>{
-          const clicks=parseFloat(fromClicks);
-          if(!from||Number.isNaN(clicks)) return null;
-          return (clicks - from.zeroClick) * from.stepMicron;
-        },[from,fromClicks]);
+      <p class="mt-3 text-xs text-zinc-500">
+        Tipp: Null-Klick = Burr-Touch (oder Ihr Espresso-Null). Ein paar bekannte Brews messen, um µm/Klick zu verfeinern.
+      </p>
+    </section>
+  </main>
 
-        // Floor to whole click
-        const toClicks = useMemo(()=>{
-          if(!to||microns==null) return null;
-          const raw = microns / to.stepMicron + to.zeroClick;
-          return Math.floor(raw);
-        },[to,microns]);
+  <!-- Footer -->
+  <footer class="max-w-3xl mx-auto px-4 pb-10 text-center text-xs text-zinc-600">
+    Für Kaffee-Enthusiasten und Profis. Kein Tracking. Daten bleiben in Ihrem Browser.<br>
+    <strong>Erstellt von Calima Specialty Coffee</strong><br><br>
+    Möchten Sie weitere Mühlen-Daten beisteuern? Schreiben Sie an
+    <a href="mailto:calima.speciality@gmail.com" class="underline">calima.speciality@gmail.com</a>.<br>
+    <em>Dies ist ein gemeinnütziges Community-Projekt – lassen Sie uns zusammenarbeiten.</em><br>
+    <span class="block mt-1">
+      (English) Want to contribute grinder data? Email <a href="mailto:calima.speciality@gmail.com" class="underline">calima.speciality@gmail.com</a>.
+      This is a <strong>charitable community project</strong> — let’s collaborate.
+    </span>
+  </footer>
 
-        function addGrinder(){
-          const g = { id:`custom-${uid()}`, name:"Custom grinder", stepMicron:25, zeroClick:0, notes:"Edit me" };
-          setGrinders(prev=>[...prev,g]);
-          setToId(g.id);
-        }
-        const deleteGrinder = id=>setGrinders(prev=>prev.filter(g=>g.id!==id));
-        const updateGrinder = (id,patch)=>setGrinders(prev=>prev.map(g=>g.id===id?{...g,...patch}:g));
-        const copyJson = ()=>navigator.clipboard?.writeText(JSON.stringify(grinders,null,2));
-        const switchLang=(next)=>{setLang(next);localStorage.setItem(LANG_KEY,next);document.documentElement.lang=next;};
+  <script>
+    // Default grinders (approximate; calibrate your own)
+    const STORAGE_KEY = "grinder-clicks-converter:v1";
+    const defaults = [
+      {name:"Comandante C40 (Standard)", step:30,   zero:0},
+      {name:"Comandante C40 (Red Clix)", step:15,   zero:0},
+      {name:"1Zpresso JX-Pro",           step:12.5, zero:0},
+      {name:"Timemore Chestnut C2",      step:36,   zero:0},
+      {name:"1Zpresso K-Plus",           step:22,   zero:0},
+      {name:"Niche Zero",                step:50,   zero:0}
+    ];
 
-        return (
-          <div className="min-h-screen">
-            <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
-              {/* Header with inline SVG logo + language */}
-              <header className="mb-6 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  {/* Inline SVG badge approximating the Calima round logo */}
-                  <span className="brand-badge">
-                    <svg viewBox="0 0 100 100" width="56" height="56" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Calima Specialty Coffee">
-                      <circle cx="50" cy="50" r="50" fill="#EA5B24"/>
-                      <text x="50" y="57" font-size="24" font-weight="900" text-anchor="middle" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" style={{letterSpacing:"1px"}}>
-                        CALIMA
-                      </text>
-                      <text x="50" y="72" font-size="8" text-anchor="middle" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" style={{letterSpacing:"1px"}}>
-                        SPECIALTY COFFEE
-                      </text>
-                    </svg>
-                  </span>
-                  <div className="flex flex-col">
-                    <h1 className="text-xl sm:text-2xl font-semibold">Calima Specialty Coffee</h1>
-                    <div className="text-sm opacity-70">{t.appTitle}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button className={cx("flag-btn", lang==="de"&&"active")} onClick={()=>switchLang("de")} aria-label="Deutsch">🇩🇪</button>
-                  <button className={cx("flag-btn", lang==="en"&&"active")} onClick={()=>switchLang("en")} aria-label="English">🇬🇧</button>
-                  <button className={cx("flag-btn", lang==="ru"&&"active")} onClick={()=>switchLang("ru")} aria-label="Русский">🇷🇺</button>
-                </div>
-              </header>
+    function load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return defaults.slice();
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) && arr.length ? arr : defaults.slice();
+      } catch { return defaults.slice(); }
+    }
+    function save(gs){ localStorage.setItem(STORAGE_KEY, JSON.stringify(gs)); }
 
-              <main className="grid gap-6 lg:grid-cols-3">
-                {/* Converter */}
-                <section className="lg:col-span-2 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-200">
-                  <h2 className="mb-4 text-lg font-medium">{t.converter}</h2>
+    let grinders = load();
 
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-1 block text-sm">{t.fromGrinder}</label>
-                      <select className="w-full rounded-xl border border-zinc-300 bg-white p-2" value={fromId} onChange={e=>setFromId(e.target.value)}>
-                        {grinders.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}
-                      </select>
-                    </div>
+    const fromEl = document.getElementById("from");
+    const toEl   = document.getElementById("to");
+    const clicksEl = document.getElementById("clicks");
+    const micronEl = document.getElementById("micron");
+    const resultEl = document.getElementById("result");
 
-                    <div>
-                      <label className="mb-1 block text-sm">{t.toGrinder}</label>
-                      <select className="w-full rounded-xl border border-zinc-300 bg-white p-2" value={toId} onChange={e=>setToId(e.target.value)}>
-                        {grinders.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}
-                      </select>
-                    </div>
+    function fillSelects(){
+      [fromEl,toEl].forEach(el=>{
+        el.innerHTML="";
+        grinders.forEach((g,i)=>{
+          const opt=document.createElement("option");
+          opt.value=i; opt.textContent=g.name; el.append(opt);
+        });
+      });
+    }
 
-                    <div>
-                      <label className="mb-1 block text-sm">{t.clicksOnSource}</label>
-                      <input inputMode="decimal" className="w-full rounded-xl border border-zinc-300 bg-white p-2" value={fromClicks} onChange={e=>setFromClicks(e.target.value)} />
-                    </div>
-                  </div>
+    function compute(){
+      const f=grinders[fromEl.value];
+      const t=grinders[toEl.value];
+      const c=parseFloat(clicksEl.value);
+      if(!f||!t||isNaN(c)){ micronEl.textContent="—"; resultEl.textContent="—"; return; }
+      const mic=(c - f.zero) * f.step;
+      micronEl.textContent=mic.toFixed(1);
+      const raw = mic / t.step + t.zero;
+      resultEl.textContent = Math.floor(raw); // always floor to whole clicks
+    }
 
-                  <div className="mt-6 grid gap-3">
-                    <div className="rounded-xl bg-zinc-50 p-4 ring-1 ring-inset ring-zinc-200">
-                      <p className="text-sm text-zinc-600">{t.estDelta}</p>
-                      <p className="text-2xl font-semibold">{microns==null?"—":`${microns.toFixed(1)} µm`}</p>
-                    </div>
+    fromEl.addEventListener("input", compute);
+    toEl.addEventListener("input", compute);
+    clicksEl.addEventListener("input", compute);
 
-                    <div className="rounded-2xl bg-emerald-50 p-4 ring-1 ring-inset ring-emerald-200">
-                      <p className="text-sm text-emerald-700">{t.targetSetting}</p>
-                      <p className="text-3xl font-bold text-emerald-900">
-                        {toClicks==null?"—":`${toClicks} clicks`}
-                      </p>
-                    </div>
-                  </div>
+    // Add custom grinder (saved locally in the user's browser)
+    document.getElementById("addBtn").addEventListener("click", ()=>{
+      const name = document.getElementById("gName").value.trim();
+      const step = parseFloat(document.getElementById("gStep").value);
+      const zero = parseFloat(document.getElementById("gZero").value);
+      if(!name || isNaN(step) || isNaN(zero)){ alert("Bitte Name, µm/Klick und Null-Klick ausfüllen."); return; }
+      grinders.push({name, step, zero});
+      save(grinders);
+      fillSelects();
+      // select new grinder as target by default
+      toEl.value = String(grinders.length - 1);
+      compute();
+      document.getElementById("gName").value="";
+      document.getElementById("gStep").value="";
+      document.getElementById("gZero").value="";
+    });
 
-                  <p className="mt-4 text-xs text-zinc-500">{t.notesTip}</p>
-                  <div className="mt-4 text-xs text-zinc-500">{t.savedLocal}</div>
-
-                  <div className="mt-4">
-                    <button onClick={addGrinder} className="w-full rounded-xl bg-zinc-900 p-2 text-white hover:bg-zinc-800">
-                      {t.addCustom}
-                    </button>
-                  </div>
-
-                  {!isAdmin && (
-                    <div className="mt-2 text-[11px] opacity-60">
-                      (Admin tools hidden. Append <code>?admin=1</code> to the URL to manage calibration.)
-                    </div>
-                  )}
-                </section>
-
-                {isAdmin && (
-                  <section id="calibration" className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-200">
-                    <h2 className="mb-4 text-lg font-medium">{t.manageCal}</h2>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full text-sm">
-                        <thead>
-                          <tr className="text-left text-zinc-600">
-                            <th className="p-2">{t.name}</th>
-                            <th className="p-2">{t.umPerClick}</th>
-                            <th className="p-2">{t.zeroClick}</th>
-                            <th className="p-2">{t.notes}</th>
-                            <th className="p-2"></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {grinders.map(g=>(
-                            <tr key={g.id} className="border-t border-zinc-200">
-                              <td className="p-2"><input className="w-full rounded-lg border border-zinc-300 p-2" value={g.name} onChange={e=>updateGrinder(g.id,{name:e.target.value})}/></td>
-                              <td className="p-2"><input type="number" step="0.1" className="w-40 rounded-lg border border-zinc-300 p-2" value={g.stepMicron} onChange={e=>updateGrinder(g.id,{stepMicron:parseFloat(e.target.value)||0})}/></td>
-                              <td className="p-2"><input type="number" step="0.5" className="w-32 rounded-lg border border-zinc-300 p-2" value={g.zeroClick} onChange={e=>updateGrinder(g.id,{zeroClick:parseFloat(e.target.value)||0})}/></td>
-                              <td className="p-2"><input className="w-full rounded-lg border border-zinc-300 p-2" value={g.notes||""} onChange={e=>updateGrinder(g.id,{notes:e.target.value})}/></td>
-                              <td className="p-2 text-right">
-                                <button className={cx("rounded-lg px-3 py-2 text-xs font-medium", g.id.startsWith("custom-")?"bg-rose-600 text-white hover:bg-rose-500":"bg-zinc-200 text-zinc-700 cursor-not-allowed")} disabled={!g.id.startsWith("custom-")} onClick={()=>deleteGrinder(g.id)}>{t.delete}</button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="mt-3">
-                      <button onClick={copyJson} className="w-full rounded-xl bg-zinc-200 p-2 hover:bg-zinc-300">{t.copyJson}</button>
-                    </div>
-                  </section>
-                )}
-              </main>
-
-              <footer className="mt-10 text-center text-xs text-zinc-500">
-                {t.footer}<br/><strong>{t.by}</strong>
-              </footer>
-            </div>
-          </div>
-        );
-      }
-
-      const root = ReactDOM.createRoot(document.getElementById("root"));
-      root.render(<App />);
-    </script>
-  </body>
+    fillSelects();
+    compute();
+  </script>
+</body>
 </html>
