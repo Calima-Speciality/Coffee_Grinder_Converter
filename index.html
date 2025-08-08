@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Grind Clicks Converter – Calima Specialty Coffee</title>
+    <title>Mahl-Klicks-Konverter – Calima Specialty Coffee</title>
 
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -12,40 +12,56 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
-    <!-- Babel for in-browser JSX transform -->
+    <!-- Babel (for JSX in-browser) -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <meta name="description" content="Convert coffee grinder clicks between different models using microns-per-click calibration. Made by Calima Specialty Coffee."/>
     <style>
-      /* Simple flag button look */
-      .flag-btn{padding:.4rem .55rem;border-radius:.75rem;border:1px solid #d4d4d8;background:#fff}
+      .flag-btn{padding:.35rem .55rem;border-radius:.75rem;border:1px solid #d4d4d8;background:#fff}
       .flag-btn.active{background:#111827;color:#fff;border-color:#111827}
-      img.logo{height:56px;width:56px;object-fit:cover;border-radius:9999px}
+      .brand-badge{height:56px;width:56px;border-radius:9999px;overflow:hidden;display:inline-block}
     </style>
   </head>
   <body class="bg-zinc-50 text-zinc-900">
     <div id="root"></div>
 
-    <!-- IMPORTANT: data-presets needed for JSX -->
     <script type="text/babel" data-presets="env,react">
       const { useEffect, useMemo, useState } = React;
 
-      // --- i18n ---
+      // ---------------- i18n ----------------
       const L = {
+        de: {
+          appTitle: "Mahl-Klicks-Konverter",
+          converter: "Konverter",
+          fromGrinder: "Von Mühle",
+          toGrinder: "Zu Mühle",
+          clicksOnSource: "Klicks an Quelle",
+          estDelta: "Geschätzte Partikel-Differenz",
+          targetSetting: "Ziel-Einstellung",
+          addCustom: "+ Eigene Mühle hinzufügen",
+          notesTip:
+            "Hinweis: Fertigungstoleranzen variieren. Als Ausgangspunkt nutzen und nach Geschmack/Flow feinjustieren. Eigene Null und µm/Klick kalibrieren.",
+          footer:
+            "Für Kaffee-Enthusiasten und Profis. Kein Tracking. Daten bleiben in Ihrem Browser.",
+          by: "Erstellt von Calima Specialty Coffee",
+          // admin-only labels (hidden unless ?admin=1)
+          manageCal: "Mühlen & Kalibrierung verwalten",
+          name: "Name",
+          umPerClick: "µm pro Klick",
+          zeroClick: "Null-Klick",
+          notes: "Notizen",
+          delete: "Löschen",
+          copyJson: "Grinder-Liste kopieren",
+          savedLocal: "Hinweis: hinzugefügte Mühlen werden lokal im Browser gespeichert.",
+        },
         en: {
           appTitle: "Grind Clicks Converter",
-          manage: "Manage grinders",
           converter: "Converter",
           fromGrinder: "From grinder",
           toGrinder: "To grinder",
           clicksOnSource: "Clicks on source",
           estDelta: "Estimated particle delta",
           targetSetting: "Target grinder setting",
-          quickSpecs: "Quick specs",
-          from: "From",
-          to: "To",
-          step: "Step",
-          zero: "Zero",
           addCustom: "+ Add custom grinder",
           notesTip:
             "Heads-up: factory tolerances vary. Use this as a baseline, then dial-in by taste and flow. Calibrate your own zero and µm/click.",
@@ -58,48 +74,17 @@
           zeroClick: "Zero click",
           notes: "Notes",
           delete: "Delete",
-        },
-        de: {
-          appTitle: "Mahl-Klicks-Konverter",
-          manage: "Mühlen verwalten",
-          converter: "Konverter",
-          fromGrinder: "Von Mühle",
-          toGrinder: "Zu Mühle",
-          clicksOnSource: "Klicks an Quelle",
-          estDelta: "Geschätzte Partikel-Differenz",
-          targetSetting: "Ziel-Einstellung",
-          quickSpecs: "Kurz-Daten",
-          from: "Von",
-          to: "Zu",
-          step: "Schritt",
-          zero: "Null",
-          addCustom: "+ Eigene Mühle hinzufügen",
-          notesTip:
-            "Hinweis: Fertigungstoleranzen variieren. Als Ausgangspunkt nutzen und nach Geschmack/Flow feinjustieren. Eigene Null und µm/Klick kalibrieren.",
-          footer:
-            "Für Kaffee-Enthusiasten und Profis. Kein Tracking. Daten bleiben in Ihrem Browser.",
-          by: "Erstellt von Calima Specialty Coffee",
-          manageCal: "Mühlen & Kalibrierung verwalten",
-          name: "Name",
-          umPerClick: "µm pro Klick",
-          zeroClick: "Null-Klick",
-          notes: "Notizen",
-          delete: "Löschen",
+          copyJson: "Copy grinder list",
+          savedLocal: "Note: added grinders are saved locally in your browser.",
         },
         ru: {
           appTitle: "Конвертер кликов помола",
-          manage: "Управление кофемолками",
           converter: "Конвертер",
           fromGrinder: "Исходная кофемолка",
           toGrinder: "Целевая кофемолка",
           clicksOnSource: "Клики на исходной",
           estDelta: "Оценка разницы частиц",
           targetSetting: "Настройка для целевой",
-          quickSpecs: "Параметры",
-          from: "Из",
-          to: "В",
-          step: "Шаг",
-          zero: "Ноль",
           addCustom: "+ Добавить свою кофемолку",
           notesTip:
             "Важно: заводские допуски различаются. Используйте как стартовую точку и доводите по вкусу/потоку. Откалибруйте свой ноль и µm/клик.",
@@ -112,10 +97,12 @@
           zeroClick: "Нулевой клик",
           notes: "Заметки",
           delete: "Удалить",
+          copyJson: "Скопировать список кофемолок",
+          savedLocal: "Внимание: новые кофемолки сохраняются локально в вашем браузере.",
         },
       };
 
-      // ---- Defaults (approximate; calibrate your own) ----
+      // -------------- Defaults (approximate) --------------
       const DEFAULT_GRINDERS = [
         { id: "c40-standard",   name: "Comandante C40 (Standard)", stepMicron: 30,   zeroClick: 0, notes: "≈30 µm/click. Calibrate your unit." },
         { id: "c40-redclix",    name: "Comandante C40 (Red Clix)", stepMicron: 15,   zeroClick: 0, notes: "≈15 µm/click." },
@@ -129,7 +116,9 @@
       const LANG_KEY = "grinder-clicks-converter:lang";
 
       const uid = () => Math.random().toString(36).slice(2, 9);
-      const cx = (...xs) => xs.filter(Boolean).join(" ");
+      const cx  = (...xs) => xs.filter(Boolean).join(" ");
+
+      const isAdmin = new URLSearchParams(location.search).get("admin") === "1";
 
       function loadGrinders() {
         try {
@@ -142,18 +131,19 @@
       const saveGrinders = (gs) => localStorage.setItem(STORAGE_KEY, JSON.stringify(gs));
 
       function App() {
-        const [lang, setLang] = useState(localStorage.getItem(LANG_KEY) || "en");
-        const t = L[lang] || L.en;
+        const [lang, setLang] = useState(localStorage.getItem(LANG_KEY) || "de");
+        const t = L[lang] || L.de;
+        useEffect(() => { document.documentElement.lang = lang; }, [lang]);
 
         const [grinders, setGrinders] = useState(loadGrinders);
-        const [fromId, setFromId] = useState(grinders[0]?.id || "");
-        const [toId, setToId] = useState(grinders[1]?.id || "");
+        const [fromId, setFromId]     = useState(grinders[0]?.id || "");
+        const [toId, setToId]         = useState(grinders[1]?.id || "");
         const [fromClicks, setFromClicks] = useState("18");
 
         useEffect(() => saveGrinders(grinders), [grinders]);
         useEffect(() => {
           if (!grinders.find(g => g.id === fromId) && grinders[0]) setFromId(grinders[0].id);
-          if (!grinders.find(g => g.id === toId) && grinders[1]) setToId(grinders[1].id);
+          if (!grinders.find(g => g.id === toId)   && grinders[1]) setToId(grinders[1].id);
         }, [grinders]);
 
         const from = useMemo(() => grinders.find(g => g.id === fromId), [grinders, fromId]);
@@ -179,6 +169,7 @@
         }
         const deleteGrinder = id => setGrinders(prev => prev.filter(g => g.id !== id));
         const updateGrinder = (id, patch) => setGrinders(prev => prev.map(g => (g.id === id ? { ...g, ...patch } : g)));
+        const copyJson = () => navigator.clipboard?.writeText(JSON.stringify(grinders, null, 2));
 
         function switchLang(next) {
           setLang(next);
@@ -189,18 +180,29 @@
         return (
           <div className="min-h-screen">
             <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
-              {/* Header with logo + language */}
+              {/* Header with inline SVG logo + language */}
               <header className="mb-6 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <img className="logo" src="./logo.jpg" alt="Calima Specialty Coffee logo" />
+                  <!-- Inline SVG badge approximating the Calima round logo -->
+                  <span class="brand-badge">
+                    <svg viewBox="0 0 100 100" width="56" height="56" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="50" cy="50" r="50" fill="#EA5B24"/>
+                      <text x="50" y="57" font-size="24" font-weight="900" text-anchor="middle" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" style="letter-spacing:1px">
+                        CALIMA
+                      </text>
+                      <text x="50" y="72" font-size="8" text-anchor="middle" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" style="letter-spacing:1px">
+                        SPECIALTY COFFEE
+                      </text>
+                    </svg>
+                  </span>
                   <div className="flex flex-col">
                     <h1 className="text-xl sm:text-2xl font-semibold">Calima Specialty Coffee</h1>
                     <div className="text-sm opacity-70">{t.appTitle}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className={cx("flag-btn", lang==="en" && "active")} onClick={() => switchLang("en")} aria-label="English">🇬🇧</button>
                   <button className={cx("flag-btn", lang==="de" && "active")} onClick={() => switchLang("de")} aria-label="Deutsch">🇩🇪</button>
+                  <button className={cx("flag-btn", lang==="en" && "active")} onClick={() => switchLang("en")} aria-label="English">🇬🇧</button>
                   <button className={cx("flag-btn", lang==="ru" && "active")} onClick={() => switchLang("ru")} aria-label="Русский">🇷🇺</button>
                 </div>
               </header>
@@ -208,12 +210,7 @@
               <main className="grid gap-6 lg:grid-cols-3">
                 {/* Converter */}
                 <section className="lg:col-span-2 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-200">
-                  <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-lg font-medium">{t.converter}</h2>
-                    <a className="text-sm underline underline-offset-4 opacity-70 hover:opacity-100" href="#calibration">
-                      {t.manage}
-                    </a>
-                  </div>
+                  <h2 className="mb-4 text-lg font-medium">{t.converter}</h2>
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
@@ -242,7 +239,7 @@
                       <p className="text-2xl font-semibold">{microns == null ? "—" : `${microns.toFixed(1)} µm`}</p>
                     </div>
 
-                    <div className="rounded-xl bg-emerald-50 p-4 ring-1 ring-inset ring-emerald-200">
+                    <div className="rounded-2xl bg-emerald-50 p-4 ring-1 ring-inset ring-emerald-200">
                       <p className="text-sm text-emerald-700">{t.targetSetting}</p>
                       <p className="text-3xl font-bold text-emerald-900">
                         {toClicks == null ? "—" : `${toClicks} clicks`}
@@ -251,64 +248,81 @@
                   </div>
 
                   <p className="mt-4 text-xs text-zinc-500">{t.notesTip}</p>
-                </section>
 
-                {/* Quick specs / calibration */}
-                <section id="calibration" className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-200">
-                  <h2 className="mb-4 text-lg font-medium">{t.manageCal}</h2>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                      <thead>
-                        <tr className="text-left text-zinc-600">
-                          <th className="p-2">{t.name}</th>
-                          <th className="p-2">{t.umPerClick}</th>
-                          <th className="p-2">{t.zeroClick}</th>
-                          <th className="p-2">{t.notes}</th>
-                          <th className="p-2"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {grinders.map(g => (
-                          <tr key={g.id} className="border-t border-zinc-200">
-                            <td className="p-2">
-                              <input className="w-full rounded-lg border border-zinc-300 p-2" value={g.name} onChange={e => updateGrinder(g.id, { name: e.target.value })} />
-                            </td>
-                            <td className="p-2">
-                              <input type="number" step="0.1" className="w-40 rounded-lg border border-zinc-300 p-2" value={g.stepMicron} onChange={e => updateGrinder(g.id, { stepMicron: parseFloat(e.target.value) || 0 })} />
-                            </td>
-                            <td className="p-2">
-                              <input type="number" step="0.5" className="w-32 rounded-lg border border-zinc-300 p-2" value={g.zeroClick} onChange={e => updateGrinder(g.id, { zeroClick: parseFloat(e.target.value) || 0 })} />
-                            </td>
-                            <td className="p-2">
-                              <input className="w-full rounded-lg border border-zinc-300 p-2" value={g.notes || ""} onChange={e => updateGrinder(g.id, { notes: e.target.value })} />
-                            </td>
-                            <td className="p-2 text-right">
-                              <button
-                                className={cx(
-                                  "rounded-lg px-3 py-2 text-xs font-medium",
-                                  g.id.startsWith("custom-") ? "bg-rose-600 text-white hover:bg-rose-500" : "bg-zinc-200 text-zinc-700 cursor-not-allowed"
-                                )}
-                                disabled={!g.id.startsWith("custom-")}
-                                onClick={() => deleteGrinder(g.id)}
-                              >
-                                {t.delete}
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="mt-4 text-xs text-zinc-500">{t.savedLocal}</div>
+
+                  <div className="mt-4">
+                    <button onClick={addGrinder} className="w-full rounded-xl bg-zinc-900 p-2 text-white hover:bg-zinc-800">
+                      {t.addCustom}
+                    </button>
                   </div>
 
-                  <button onClick={addGrinder} className="mt-4 w-full rounded-xl bg-zinc-900 p-2 text-white hover:bg-zinc-800">
-                    {t.addCustom}
-                  </button>
+                  {!isAdmin && (
+                    <div className="mt-2 text-[11px] opacity-60">
+                      (Admin tools hidden. Append <code>?admin=1</code> to the URL to manage calibration.)
+                    </div>
+                  )}
                 </section>
+
+                {/* Admin-only calibration (hidden by default) */}
+                {isAdmin && (
+                  <section id="calibration" className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-200">
+                    <h2 className="mb-4 text-lg font-medium">{t.manageCal}</h2>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full text-sm">
+                        <thead>
+                          <tr className="text-left text-zinc-600">
+                            <th className="p-2">{t.name}</th>
+                            <th className="p-2">{t.umPerClick}</th>
+                            <th className="p-2">{t.zeroClick}</th>
+                            <th className="p-2">{t.notes}</th>
+                            <th className="p-2"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {grinders.map(g => (
+                            <tr key={g.id} className="border-t border-zinc-200">
+                              <td className="p-2">
+                                <input className="w-full rounded-lg border border-zinc-300 p-2" value={g.name} onChange={e => updateGrinder(g.id, { name: e.target.value })} />
+                              </td>
+                              <td className="p-2">
+                                <input type="number" step="0.1" className="w-40 rounded-lg border border-zinc-300 p-2" value={g.stepMicron} onChange={e => updateGrinder(g.id, { stepMicron: parseFloat(e.target.value) || 0 })} />
+                              </td>
+                              <td className="p-2">
+                                <input type="number" step="0.5" className="w-32 rounded-lg border border-zinc-300 p-2" value={g.zeroClick} onChange={e => updateGrinder(g.id, { zeroClick: parseFloat(e.target.value) || 0 })} />
+                              </td>
+                              <td className="p-2">
+                                <input className="w-full rounded-lg border border-zinc-300 p-2" value={g.notes || ""} onChange={e => updateGrinder(g.id, { notes: e.target.value })} />
+                              </td>
+                              <td className="p-2 text-right">
+                                <button
+                                  className={cx(
+                                    "rounded-lg px-3 py-2 text-xs font-medium",
+                                    g.id.startsWith("custom-") ? "bg-rose-600 text-white hover:bg-rose-500" : "bg-zinc-200 text-zinc-700 cursor-not-allowed"
+                                  )}
+                                  disabled={!g.id.startsWith("custom-")}
+                                  onClick={() => deleteGrinder(g.id)}
+                                >
+                                  {t.delete}
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="mt-3">
+                      <button onClick={copyJson} className="w-full rounded-xl bg-zinc-200 p-2 hover:bg-zinc-300">
+                        {t.copyJson}
+                      </button>
+                    </div>
+                  </section>
+                )}
               </main>
 
               <footer className="mt-10 text-center text-xs text-zinc-500">
-                {t.footer}<br/>
-                <strong>{t.by}</strong>
+                {t.footer}<br/><strong>{t.by}</strong>
               </footer>
             </div>
           </div>
@@ -320,4 +334,5 @@
     </script>
   </body>
 </html>
+
 
